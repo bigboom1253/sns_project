@@ -12,12 +12,13 @@ BOT_NAME = 'Insta'
 SPIDER_MODULES = ['Insta.spiders']
 NEWSPIDER_MODULE = 'Insta.spiders'
 
+FEED_EXPORT_ENCODING = 'utf-8'
+
+# Obey robots.txt rules
+ROBOTSTXT_OBEY = False
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'Insta (+http://www.yourdomain.com)'
-
-# Obey robots.txt rules
-ROBOTSTXT_OBEY = True
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
