@@ -5,10 +5,12 @@ import json
 # Insta Cralwer
 class InstaSpider(scrapy.Spider):
     
-    name = "insta_post"
+    name = "insta_tag"
 
     tag_list = '테니스 서핑'.split()
     tag_number = 0
+    POST_MAX = 1500 # 한 해시태그당 약 1500개 포스트 수집 (해시태그 10개 기준, 목표 : 1만명, 여유 1.5배)
+    now_post = 0
     
     short_url = 'https://www.instagram.com/p/'
 
@@ -38,13 +40,15 @@ class InstaSpider(scrapy.Spider):
                     'source' : source
                 }
 
-        InstaSpider.end_cursor = sources['page_info']['end_cursor'] #Next Page 확인
-        if InstaSpider.end_cursor != None:
-            yield scrapy.Request('http://instagram.com/graphql/query/?query_hash=7dabc71d3e758b1ec19ffb85639e427b&variables={"tag_name":"' + InstaSpider.tag_list[InstaSpider.tag_number] + '","first":12'+',"after":"'+InstaSpider.end_cursor+'"}', callback=self.parse)
-        else :
-            InstaSpider.tag_number += 1
-            if InstaSpider.tag_number >= len(InstaSpider.tag_list):
-                return
-            else:
-                yield scrapy.Request('http://instagram.com/graphql/query/?query_hash=7dabc71d3e758b1ec19ffb85639e427b&variables={"tag_name":"' + InstaSpider.tag_list[InstaSpider.tag_number] + '","first":12}', callback=self.parse)
+        InstaSpider.now_post += len(sources['edges'])
 
+        InstaSpider.end_cursor = sources['page_info']['end_cursor'] #Next Page 확인
+        if InstaSpider.now_post < InstaSpider.POST_MAX:
+            if InstaSpider.end_cursor != None:
+                yield scrapy.Request('http://instagram.com/graphql/query/?query_hash=7dabc71d3e758b1ec19ffb85639e427b&variables={"tag_name":"' + InstaSpider.tag_list[InstaSpider.tag_number] + '","first":12'+',"after":"'+InstaSpider.end_cursor+'"}', callback=self.parse)
+                return
+        
+        InstaSpider.tag_number += 1
+        if InstaSpider.tag_number < len(InstaSpider.tag_list):
+            InstaSpider.now_post = 0
+            yield scrapy.Request('http://instagram.com/graphql/query/?query_hash=7dabc71d3e758b1ec19ffb85639e427b&variables={"tag_name":"' + InstaSpider.tag_list[InstaSpider.tag_number] + '","first":12}', callback=self.parse)
