@@ -2,9 +2,9 @@
 
 > 관련참고
 
-> 1. 텍스트 마이닝을 활용한 금융통화위원회 의사록 분석
+> 1. Project Summary (Notion)
 
-> https://www.bok.or.kr/portal/bbs/P0002454/view.do?nttId=10049321&menuNo=200431&pageIndex=2
+> https://www.notion.so/User-Profiling-3b4308312e4845ca85cc263e240eea90 
 
 > 1. 분석 요약
 
@@ -38,17 +38,16 @@ pip install ./eKoNLPy-master/.
 
 > http://blog.naver.com/PostView.nhn?blogId=jjys9047&logNo=221586527508&parentCategoryNo=&categoryNo=45&viewDate=&isShowPopularPosts=false&from=postView
 
-## 1. news_crawler
+## 1. Insta_crawler
 
-### crawling 디렉토리로 이동
+### Insta 디렉토리로 이동
 
 ```
-cd crawling
+cd Insta
 ```
 
 ### scrapy 크롤러 동작 명령어
 
 ```
-scrapy crawl navernews                # csv 형식으로 저장(default)
-scrapy crawl navernews -o test.json   # json 형식으로 저장
+scrapy crawl insta_tag -o insta_tag.json   # json 형식으로 저장
 ```
