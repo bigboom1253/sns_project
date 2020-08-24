@@ -31,7 +31,7 @@ class JsonMaker():
 
     # file path, name 통합
     def write_file(self, data):
-        self.file = open(self.last_path + str(self.fn), 'a')
+        self.file = open(self.last_path + str(self.fn) + '.json', 'a')
         self.file.write('[\n' + json.dumps(data))
         self.count += 1
 
@@ -42,14 +42,14 @@ class JsonMaker():
             self.close_file()
             self.count = 0
             self.fn += 1
-            self.write_file({})
-            if self.fn == 100:
+            if self.fn == 101:
                 self.fn = 1
                 self.f_si += 1
                 if self.f_si == 91:
                     self.f_li += 1
                     self.f_si = 65
                 self.create_folder()
+            self.write_file({})
 
 
     def close_file(self):

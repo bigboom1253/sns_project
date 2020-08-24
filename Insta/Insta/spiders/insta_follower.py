@@ -2,21 +2,41 @@ import scrapy
 from datetime import datetime
 import json
 import time
+import pandas as pd
+from SNS import FileMaker
 
 # Insta Cralwer
 class InstaSpider(scrapy.Spider):
     
     name = "insta_follower"
 
-    id_list = '40561677463 40561677463'.split()
+    id_list = list(map(lambda i : int(i), pd.read_json('Insta_Data/insta_users.json')['insta_id'].unique()))
+    
     id_number = 0
-    now_follower = 0
-    follower_max = 6000
+    count = 0
+    follower_max = 180
     
+    cookies = {
+        'ig_did':'06548C02-0DCB-4692-8EA3-ADCD9804555D', 
+        'mid':'X0NITwALAAGpos1dYjjZi7DxOhQF',
+        'csrftoken':'X1W6anVSNI3A57oMTOm6Ln45h8FIWRkL', 
+        'ds_user_id':'27175886134',
+        'sessionid':'27175886134%3Adggd9B7zspeWhY%3A23', 
+        'shbid':'2488', 
+        'shbts':'1598244963.155258', 
+        'rur':'ASH', 
+        'urlgen':'"{\"222.107.238.25\": 4766}:1kA4XS:_QfDw8Ax5-ycHtUvNIxu89VZ4qU"'
+    }
     
-    start_urls = [
-        'http://instagram.com/graphql/query/?query_hash=c76146de99bb02f6415203be841dd25a&variables={"id":"' + id_list[id_number] + '","first":12}'
-    ]
+    def start_requests(self):
+        url = 'http://instagram.com/graphql/query/?query_hash=c76146de99bb02f6415203be841dd25a&variables={"id":"' + str(InstaSpider.id_list[InstaSpider.id_number]) + '","first":36}'
+        InstaSpider.fm = FileMaker.JsonMaker()
+        InstaSpider.fm.create_folder()
+        InstaSpider.fm.write_file({})
+        yield scrapy.Request(url, callback=self.parse, cookies=InstaSpider.cookies)
+        
+    def close(self, reason):
+        InstaSpider.fm.close_file()
 
     end_cursor = True
     def parse(self, response):
@@ -24,33 +44,35 @@ class InstaSpider(scrapy.Spider):
 
         for source in sources['edges']:
             try:
-                yield {
+                yield InstaSpider.fm.add_data({
 
                     'follower_id' : str(source['node']['id']),
                     'follower_username' : str(source['node']['username']),
                     'follower_full_name' : str(source['node']['full_name'])
                     
-                }
+                })
             except:
-                yield {
+                yield InstaSpider.fm.add_data({
                     'error' : response.url,
                     'source' : source
-                }
+                })
 
 
         time.sleep(0.1)
         
-        InstaSpider.now_follower += len(sources['edges'])
+        # InstaSpider.now_follower += len(sources['edges'])
 
         InstaSpider.end_cursor = sources['page_info']['end_cursor'] #Next Page 확인
-        if InstaSpider.now_follower > InstaSpider.follower_max:    # 7천개에서 에러가 남, 6천으로하고 다음으로 넘어가기 전에 10분 텀을 준다
+        
+        InstaSpider.count += 1
+        if InstaSpider.count >= InstaSpider.follower_max:    
             time.sleep(600)
-            InstaSpider.now_follower = 0
+            InstaSpider.count = 0
 
         if InstaSpider.end_cursor != None:
-            yield scrapy.Request('http://instagram.com/graphql/query/?query_hash=c76146de99bb02f6415203be841dd25a&variables={"id":"' + InstaSpider.id_list[InstaSpider.id_number] + '","first":12'+',"after":"'+InstaSpider.end_cursor+'"}', callback=self.parse)
+            yield scrapy.Request('http://instagram.com/graphql/query/?query_hash=c76146de99bb02f6415203be841dd25a&variables={"id":"' + str(InstaSpider.id_list[InstaSpider.id_number]) + '","first":36'+',"after":"'+InstaSpider.end_cursor+'"}', callback=self.parse, cookies=InstaSpider.cookies)
             return
         
         InstaSpider.id_number += 1
         if InstaSpider.id_number < len(InstaSpider.id_list):
-            yield scrapy.Request('http://instagram.com/graphql/query/?query_hash=c76146de99bb02f6415203be841dd25a&variables={"id":"' + InstaSpider.id_list[InstaSpider.id_number] + '","first":12}', callback=self.parse)
+            yield scrapy.Request('http://instagram.com/graphql/query/?query_hash=c76146de99bb02f6415203be841dd25a&variables={"id":"' + str(InstaSpider.id_list[InstaSpider.id_number]) + '","first":36}', callback=self.parse, cookies=InstaSpider.cookies)
