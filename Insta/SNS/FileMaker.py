@@ -1,15 +1,57 @@
 import json
+import os
 
-def write_file(obj, file_name, data):
-    obj.file = open(file_name, 'w')
-    obj.file.write('[\n' + json.dumps(data))
-    obj.file.close()
+class JsonMaker():
 
-def add_data(obj, file_name, data):
-    obj.file = open(file_name, 'a')
-    obj.file.write(',\n' + json.dumps(data))
-    obj.file.close()
+    # Large Folder Index
+    f_li = 65
+    # Small Folder Index
+    f_si = 65
 
-def close_file(obj):
-    obj.file.write('\n]')
-    obj.file.close()
+    # File Name (Number)
+    fn = 1
+
+    # 호출 수
+    count = 0
+
+    last_path = ''
+
+    # File Path 통합용 (Post, Follower, Follow) 별로 구분하기
+    def __init__(self, file_path = './Insta_Data/'):
+        self.file_path = file_path
+
+    def create_folder(self):
+        fol_dir = self.file_path + chr(self.f_li) + chr(self.f_si)
+        try:
+            if not os.path.exists(fol_dir):
+                os.makedirs(fol_dir)
+        except OSError:
+            print('Error: Creating Directory' + fol_dir)
+        self.last_path = fol_dir + '/'
+
+    # file path, name 통합
+    def write_file(self, data):
+        self.file = open(self.last_path + str(self.fn), 'a')
+        self.file.write('[\n' + json.dumps(data))
+        self.count += 1
+
+    def add_data(self, data):
+        self.file.write(',\n' + json.dumps(data))
+        self.count += 1
+        if self.count==10000:
+            self.close_file()
+            self.count = 0
+            self.fn += 1
+            self.write_file({})
+            if self.fn == 100:
+                self.fn = 1
+                self.f_si += 1
+                if self.f_si == 91:
+                    self.f_li += 1
+                    self.f_si = 65
+                self.create_folder()
+
+
+    def close_file(self):
+        self.file.write('\n]')
+        self.file.close()
