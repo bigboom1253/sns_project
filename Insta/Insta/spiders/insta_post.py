@@ -23,7 +23,7 @@ class InstaSpider(scrapy.Spider):
     name = "insta_post"
 
     id_number = 0
-    id_list = list(map(lambda i : int(i), pd.read_json('Insta_Data/insta_users.json')['insta_id'].unique()))
+    id_list = pd.read_json('Insta_Data/insta_id.json')['insta_id']
     # POST_MAX = 1500 # 한 해시태그당 약 1500개 포스트 수집 (해시태그 10개 기준, 목표 : 1만명, 여유 1.5배)
     count = 0
     short_url = 'https://www.instagram.com/p/'
@@ -34,7 +34,7 @@ class InstaSpider(scrapy.Spider):
         url =  'https://www.instagram.com/graphql/query/?query_hash=bfa387b2992c3a52dcbe447467b4b771&variables={"id":"' + str(InstaSpider.id_list[InstaSpider.id_number]) + '","first":36}'
         InstaSpider.fn = FileMaker.JsonMaker()
         InstaSpider.fn.create_folder()
-        InstaSpider.fn.write_file({})
+        InstaSpider.fn.write_file()
         yield scrapy.Request(url = url, callback= self.parse, cookies= InstaSpider.cookies)
     
     def close(self, reason):
@@ -43,7 +43,18 @@ class InstaSpider(scrapy.Spider):
     end_cursor = True
     
     def parse(self, response):
-        sources = json.loads(response.text)['data']['user']['edge_owner_to_timeline_media'] #필요한 데이터
+        InstaSpider.count += 1 
+        # 180 번 정도 부르면 60초 쉬게
+        if int(InstaSpider.count/180) != InstaSpider.tmp:
+            time.sleep(600)
+            InstaSpider.tmp = int(InstaSpider.count/180)
+        # if InstaSpider.now_post < InstaSpider.POST_MAX:
+        try:
+            sources = json.loads(response.text)['data']['user']['edge_owner_to_timeline_media'] #필요한 데이터
+        except:
+            InstaSpider.id_number += 1
+            yield scrapy.Request('https://www.instagram.com/graphql/query/?query_hash=bfa387b2992c3a52dcbe447467b4b771&variables={"id":"' + str(InstaSpider.id_list[InstaSpider.id_number]) + '","first":36}', callback=self.parse)
+            return
 
         for source in sources['edges']:
             try:
@@ -76,12 +87,6 @@ class InstaSpider(scrapy.Spider):
 
         InstaSpider.end_cursor = sources['page_info']['end_cursor'] #Next Page 확인
 
-        InstaSpider.count += 1 
-        # 180 번 정도 부르면 60초 쉬게
-        if int(InstaSpider.count/180) != InstaSpider.tmp:
-            time.sleep(600)
-            InstaSpider.tmp = int(InstaSpider.count/180)
-        # if InstaSpider.now_post < InstaSpider.POST_MAX:
        
         if InstaSpider.end_cursor != None:
             #id 리스트로 받기

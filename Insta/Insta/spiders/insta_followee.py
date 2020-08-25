@@ -10,7 +10,7 @@ class InstaSpider(scrapy.Spider):
     
     name = "insta_followee"
 
-    id_list = list(map(lambda i : int(i), pd.read_json('Insta_Data/insta_users.json')['insta_id'].unique()))
+    id_list = pd.read_json('Insta_Data/insta_id.json')['insta_id']
     id_number = 0
     now_followee = 0
     tmp = 0
@@ -35,16 +35,34 @@ class InstaSpider(scrapy.Spider):
         url = 'http://instagram.com/graphql/query/?query_hash=d04b0a864b4b54837c0d870b0e77e076&variables={"id":"' + str(InstaSpider.id_list[InstaSpider.id_number]) + '","first":36}'
         InstaSpider.fm = FileMaker.JsonMaker()
         InstaSpider.fm.create_folder()
-        InstaSpider.fm.write_file({})
+        InstaSpider.fm.write_file()
         yield scrapy.Request(url, callback=self.parse, cookies=InstaSpider.cookies)
 
     end_cursor = True
     def parse(self, response):
-        sources = json.loads(response.text)['data']['user']['edge_follow'] #필요한 데이터
+        InstaSpider.count += 1
+        if int(InstaSpider.count/180) != InstaSpider.tmp:
+            time.sleep(600)
+            InstaSpider.tmp = int(InstaSpider.count/180)
+        
+        try:
+            sources = json.loads(response.text)['data']['user']['edge_follow'] #필요한 데이터
+        except:
+            InstaSpider.id_number += 1
+            if InstaSpider.id_number < len(InstaSpider.id_list):
+                yield scrapy.Request('http://instagram.com/graphql/query/?query_hash=d04b0a864b4b54837c0d870b0e77e076&variables={"id":"' + str(InstaSpider.id_list[InstaSpider.id_number]) + '","first":36}', callback=self.parse, cookies=InstaSpider.cookies)
+                return
+
+        if len(sources['edges']) > 500:
+            InstaSpider.id_number += 1
+            if InstaSpider.id_number < len(InstaSpider.id_list):
+                yield scrapy.Request('http://instagram.com/graphql/query/?query_hash=d04b0a864b4b54837c0d870b0e77e076&variables={"id":"' + str(InstaSpider.id_list[InstaSpider.id_number]) + '","first":36}', callback=self.parse, cookies=InstaSpider.cookies)
+                return
 
         for source in sources['edges']:
             try:
                 yield InstaSpider.fm.add_data({
+                    'user_id' : str(InstaSpider.id_list[InstaSpider.id_number]),
                     'followee_id' : str(source['node']['id']),
                     'followee_name' : str(source['node']['username']),
                     'followee_fullname' : str(source['node']['full_name'])
@@ -52,15 +70,12 @@ class InstaSpider(scrapy.Spider):
             except:
                 yield InstaSpider.fm.add_data({
                     'error' : response.url,
+                    'user_id' : str(InstaSpider.id_list[InstaSpider.id_number]),
                     'source' : source
                 })
 
         time.sleep(0.1)
-        InstaSpider.count += 1
         InstaSpider.end_cursor = sources['page_info']['end_cursor'] #Next Page 확인
-        if int(InstaSpider.count/180) != InstaSpider.tmp:
-            time.sleep(600)
-            InstaSpider.tmp = int(InstaSpider.count/180)
         
         if InstaSpider.end_cursor != None:
             yield scrapy.Request('http://instagram.com/graphql/query/?query_hash=d04b0a864b4b54837c0d870b0e77e076&variables={"id":"' + str(InstaSpider.id_list[InstaSpider.id_number]) + '","first":36'+',"after":"'+InstaSpider.end_cursor+'"}', callback=self.parse, cookies=InstaSpider.cookies)
