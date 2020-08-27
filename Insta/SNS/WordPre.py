@@ -40,11 +40,10 @@ class Pre():
         return list(map(lambda i : i.replace('\n', ''), stopwords))
 
     def del_stopword(self, token_datas):
-        stopwords = self.get_stop()
         if type(token_datas) != list:
             token_datas = [token_datas]
-        
-        return [list(filter(lambda i : True if i not in stopwords else False, d)) for d in token_datas]
+
+        return [list(filter(lambda i : True if i not in self.get_stop() else False, d)) for d in token_datas]
 
     # 정규표현식 Functions (finditer, sub) - return = list
     def search(self, reg, datas):
