@@ -31,7 +31,7 @@ class Pre():
     def word_tokenize(self, datas):
         if type(datas) != list:
             datas = [datas]
-        return list(filter(lambda i : i if len(i) > 1 else False, self.search('(?<!가-힣)[가-힣]+(?!가-힣)', datas)))
+        return self.search('[가-힣]{2,}', datas)
 
     # 불용어 처리
     def get_stop(self):

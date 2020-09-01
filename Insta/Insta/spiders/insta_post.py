@@ -3,39 +3,42 @@ from datetime import datetime
 import json
 import time
 from SNS import FileMaker
+from SNS import FileSearch
 import pandas as pd
 # Insta Cralwer
 
 class InstaSpider(scrapy.Spider):
     
-    cookies = {
-        'ig_did':'4475FF53-AA12-491C-A1A6-9BEA170155BC', 
-        'mid':'W21bMAALAAFp96Mh4deV9H0g9FN6',
-        'csrftoken':'SNkEseuLyR6MAdufsbNyvSjM3qteRIEg', 
-        'ds_user_id':'40382277127',
-        'sessionid':'40382277127%3AjbkwRX5hRZjK8C%3A14', 
-        'shbid':'8677', 
-        'shbts':'1598245161.28281', 
-        'rur':'ATN', 
-        'urlgen':'"{\"222.107.238.125\": 4766}:1kA79M:od8HEpiAong0o0zizyocvF-NsB4"'
-    }
+    js = FileSearch.JsonSearch()
+    fl = js.search('Insta_Data')
+    id_list = list(pd.read_json(fl[0])['insta_id'])
+    fn = FileMaker.JsonMaker()
+    
 
     name = "insta_post"
+    for s_i in range(65,80):
+        try:
+            fl = js.search('Insta_Data/A'+chr(s_i))
+            if len(fl) != 100:
+                fl.sort()
+                id_number = id_list.index(list(pd.read_json(fl[len(fl)-1])['insta_id'])[-1])
+                fn.f_si = s_i
+                fn.fn += len(fl)
+                break
+        except:
+            id_number = 0
+            break
 
-    id_number = 0
-    id_list = pd.read_json('Insta_Data/insta_id.json')['insta_id']
-    # POST_MAX = 1500 # 한 해시태그당 약 1500개 포스트 수집 (해시태그 10개 기준, 목표 : 1만명, 여유 1.5배)
     count = 0
     short_url = 'https://www.instagram.com/p/'
     tmp = 0
 
 
     def start_requests(self) :
-        url =  'https://www.instagram.com/graphql/query/?query_hash=bfa387b2992c3a52dcbe447467b4b771&variables={"id":"' + str(InstaSpider.id_list[InstaSpider.id_number]) + '","first":36}'
-        InstaSpider.fn = FileMaker.JsonMaker()
         InstaSpider.fn.create_folder()
         InstaSpider.fn.write_file()
-        yield scrapy.Request(url = url, callback= self.parse, cookies= InstaSpider.cookies)
+        url =  'https://www.instagram.com/graphql/query/?query_hash=bfa387b2992c3a52dcbe447467b4b771&variables={"id":"' + str(InstaSpider.id_list[InstaSpider.id_number]) + '","first":36}'
+        yield scrapy.Request(url = url, callback= self.parse)
     
     def close(self, reason):
         InstaSpider.fn.close_file()
@@ -44,11 +47,10 @@ class InstaSpider(scrapy.Spider):
     
     def parse(self, response):
         InstaSpider.count += 1 
-        # 180 번 정도 부르면 60초 쉬게
         if int(InstaSpider.count/180) != InstaSpider.tmp:
-            time.sleep(600)
+            time.sleep(650)
             InstaSpider.tmp = int(InstaSpider.count/180)
-        # if InstaSpider.now_post < InstaSpider.POST_MAX:
+
         try:
             sources = json.loads(response.text)['data']['user']['edge_owner_to_timeline_media'] #필요한 데이터
         except:
@@ -56,13 +58,9 @@ class InstaSpider(scrapy.Spider):
             yield scrapy.Request('https://www.instagram.com/graphql/query/?query_hash=bfa387b2992c3a52dcbe447467b4b771&variables={"id":"' + str(InstaSpider.id_list[InstaSpider.id_number]) + '","first":36}', callback=self.parse)
             return
 
+
         for source in sources['edges']:
             try:
-            # try :
-            #     temp = source['node']['edge_media_to_tagged_user']['edges']['node']['user']['full_name']    
-            # except :    
-            #     temp = ''
-                
                 yield InstaSpider.fn.add_data({
                     'post_date' : datetime.fromtimestamp(source['node']['taken_at_timestamp']).strftime('%Y-%m-%d %H:%M:%S'),
                     'crawling_time' : datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -72,10 +70,6 @@ class InstaSpider(scrapy.Spider):
                     'like_count' : int(source['node']['edge_media_preview_like']['count']),
                     'url' : InstaSpider.short_url + str(source['node']['shortcode']),
                     'post_id' : str(source['node']['shortcode']),
-                    # 'tagged' : temp,
-                    # hashtag -없음
-                    # region_tag -없음
-                    # view_count #비디오에만 있음
                     })
             except:
                 yield InstaSpider.fn.add_data({
@@ -83,17 +77,11 @@ class InstaSpider(scrapy.Spider):
                     'source' : source
                 })
 
-        # InstaSpider.now_post += len(sources['edges'])
-
         InstaSpider.end_cursor = sources['page_info']['end_cursor'] #Next Page 확인
-
        
         if InstaSpider.end_cursor != None:
             #id 리스트로 받기
             yield scrapy.Request('https://www.instagram.com/graphql/query/?query_hash=bfa387b2992c3a52dcbe447467b4b771&variables={"id":"' + str(InstaSpider.id_list[InstaSpider.id_number]) + '","first":36,"after":"'+InstaSpider.end_cursor+'"}', callback=self.parse)
-            
-        else :    
+        else :
              InstaSpider.id_number += 1
              yield scrapy.Request('https://www.instagram.com/graphql/query/?query_hash=bfa387b2992c3a52dcbe447467b4b771&variables={"id":"' + str(InstaSpider.id_list[InstaSpider.id_number]) + '","first":36}', callback=self.parse)
-
-        
