@@ -5,6 +5,7 @@ import time
 from SNS import FileMaker
 from SNS import FileSearch
 import pandas as pd
+import re
 # Insta Cralwer
 
 class InstaSpider(scrapy.Spider):
@@ -18,10 +19,11 @@ class InstaSpider(scrapy.Spider):
     name = "insta_post"
     for s_i in range(65,80):
         try:
-            fl = js.search('Insta_Data/A'+chr(s_i))
+            path = 'Insta_Data/A'+chr(s_i)
+            fl = js.search(path)
             if len(fl) != 100:
-                fl.sort()
-                id_number = id_list.index(list(pd.read_json(fl[len(fl)-1])['insta_id'])[-1])
+                f_num = max(list(map(lambda i : int(re.search('[0-9]+', i).group()), fl)))
+                id_number = id_list.index(list(pd.read_json(path + '/' + str(f_num) + '.json')['insta_id'])[-1])
                 fn.f_si = s_i
                 fn.fn += len(fl)
                 break
