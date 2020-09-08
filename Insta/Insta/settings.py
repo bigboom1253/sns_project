@@ -51,9 +51,11 @@ ROBOTSTXT_OBEY = False
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-#DOWNLOADER_MIDDLEWARES = {
-#    'Insta.middlewares.InstaDownloaderMiddleware': 543,
-#}
+RETRY_HTTP_CODES = [429]
+DOWNLOADER_MIDDLEWARES = {
+   'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
+   'Insta.middlewares.TooManyRequestsRetryMiddleware': 543,
+}
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html

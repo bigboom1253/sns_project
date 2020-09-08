@@ -5,7 +5,10 @@ import time
 from SNS import FileMaker
 from SNS import FileSearch
 import pandas as pd
+import re
 # Insta Cralwer
+
+from ..middlewares import TooManyRequestsRetryMiddleware
 
 class InstaSpider(scrapy.Spider):
     
@@ -18,10 +21,11 @@ class InstaSpider(scrapy.Spider):
     name = "insta_post"
     for s_i in range(65,80):
         try:
-            fl = js.search('Insta_Data/A'+chr(s_i))
+            path = 'Insta_Data/A'+chr(s_i)
+            fl = js.search(path)
             if len(fl) != 100:
-                fl.sort()
-                id_number = id_list.index(list(pd.read_json(fl[len(fl)-1])['insta_id'])[-1])
+                f_num = max(list(map(lambda i : int(re.search('[0-9]+', i).group()), fl)))
+                id_number = id_list.index(list(pd.read_json(path + '/' + str(f_num) + '.json')['insta_id'])[-1])
                 fn.f_si = s_i
                 fn.fn += len(fl)
                 break
@@ -29,10 +33,7 @@ class InstaSpider(scrapy.Spider):
             id_number = 0
             break
 
-    count = 0
     short_url = 'https://www.instagram.com/p/'
-    tmp = 0
-
 
     def start_requests(self) :
         InstaSpider.fn.create_folder()
@@ -46,10 +47,6 @@ class InstaSpider(scrapy.Spider):
     end_cursor = True
     
     def parse(self, response):
-        InstaSpider.count += 1 
-        if int(InstaSpider.count/180) != InstaSpider.tmp:
-            time.sleep(650)
-            InstaSpider.tmp = int(InstaSpider.count/180)
 
         try:
             sources = json.loads(response.text)['data']['user']['edge_owner_to_timeline_media'] #필요한 데이터
