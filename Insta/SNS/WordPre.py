@@ -50,15 +50,12 @@ class Pre():
         if type(datas) != list:
             datas = [datas]
         result = [list(re.finditer(reg, d)) for d in datas]
-        features = []
-        for r in result:
-            features.extend(list(map(lambda i : i.group(), r)))
-        return features
+        return [list(map(lambda i : i.group(), r)) for r in result]
     
-    def substr(self, reg, datas):
+    def substr(self, reg, datas, space=True):
         if type(datas) != list:
             datas = [datas]
-        return [re.sub(reg, ' ', d) for d in datas]
+        return [re.sub(reg, ' ', d) if space==True else re.sub(reg, '', d) for d in datas]
 
     # POS Tagging
     # Mecab 1순위, KOMORAN 2순위 사용 고려
