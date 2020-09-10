@@ -10,8 +10,8 @@
 # pip install konlpy
 
 import re
-import mecab
-from konlpy.tag import Komoran
+# import mecab
+# from konlpy.tag import Komoran
 
 
 class Pre():
@@ -22,10 +22,10 @@ class Pre():
 
     # Escape Code 처리
     escape_code = ['\n', '\xa0', '\"', '\'', '\t', '\r', '\$', '\\', '\u200d']
-    def del_escape(self, datas):
+    def del_escape(self, sents):
         for e in self.escape_code:
-            datas = datas.replace(e, ' ')
-        return datas
+            sents = sents.replace(e, ' ')
+        return sents
 
     # 한글 단어 토큰화 (단어 길이 1일 경우 제거)
     def word_tokenize(self, datas):
@@ -49,7 +49,9 @@ class Pre():
     def search(self, reg, datas):
         if type(datas) != list:
             datas = [datas]
+        
         result = [list(re.finditer(reg, d)) for d in datas]
+        
         return [list(map(lambda i : i.group(), r)) for r in result]
     
     def substr(self, reg, datas, space=True):
