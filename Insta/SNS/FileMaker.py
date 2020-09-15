@@ -20,8 +20,11 @@ class JsonMaker():
     def __init__(self, file_path = './Insta_Data/'):
         self.file_path = file_path
 
-    def create_folder(self):
-        fol_dir = self.file_path + chr(self.f_li) + chr(self.f_si)
+    def create_folder(self, Folder_Name=''):
+        if Folder_Name != '':
+            fol_dir = self.file_path + Folder_Name
+        else:
+            fol_dir = self.file_path + chr(self.f_li) + chr(self.f_si)
         try:
             if not os.path.exists(fol_dir):
                 os.makedirs(fol_dir)
