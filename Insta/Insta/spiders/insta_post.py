@@ -23,11 +23,11 @@ class InstaSpider(scrapy.Spider):
         try:
             path = 'Insta_Data/A'+chr(s_i)
             fl = js.search(path)
-            if len(fl) != 100:
-                f_num = max(list(map(lambda i : int(re.search('[0-9]+', i).group()), fl)))
+            f_num = max(list(map(lambda i : int(re.search('[0-9]+', i).group()), fl)))
+            if f_num != 100:
                 id_number = id_list.index(list(pd.read_json(path + '/' + str(f_num) + '.json')['insta_id'])[-1])
                 fn.f_si = s_i
-                fn.fn += len(fl)
+                fn.fn += f_num
                 break
         except:
             id_number = 0
