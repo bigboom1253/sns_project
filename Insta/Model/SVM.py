@@ -2,47 +2,20 @@ from sklearn.svm import SVC
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pickle
 
-X_train_std = np.random.random(size=(200,150))
-y_train = np.random.randint(2, size=(200))
-
-svm = SVC(kernel='linear', C=1.0, random_state=0)
 # 로지스틱 회귀에서의 C와 반대의 개념. 모델을 조율해주는 값이라고 보면 됨.
-svm.fit(X_train_std, y_train)
+def train(X, y, line_type = 'rbf', const=1.0):
+    svm = SVC(kernel=line_type, C=const, random_state=0)
+    svm.fit(X, y)
+    with open(r'.\Insta\Model\SVM\model.bin', 'wb') as f:
+        pickle.dump(svm, f)
+    print('Accuracy: %.2f' % svm.score(X, y))
 
-X_test_std = np.random.random(size=(40,150))
-
-y_pred_svc = svm.predict(X_test_std)
-# y_test, y_pred_svc
-y_test = np.random.randint(2, size=(40))
-print('Accuracy: %.2f' % svm.score(X_test_std, y_test))
-
-
-np.random.seed(0)
-X_xor = np.random.randn(200, 2)
-y_xor = np.logical_xor(X_xor[:, 0] > 0,
-                       X_xor[:, 1] > 0)
-y_xor = np.where(y_xor, 1, -1)
-
-plt.scatter(X_xor[y_xor == 1, 0],
-            X_xor[y_xor == 1, 1],
-            c='b', marker='x',
-            label='1')
-plt.scatter(X_xor[y_xor == -1, 0],
-            X_xor[y_xor == -1, 1],
-            c='r',
-            marker='s',
-            label='-1')
-
-plt.xlim([-3, 3])
-plt.ylim([-3, 3])
-plt.legend(loc='best')
-plt.tight_layout()
-# plt.savefig('./figures/xor.png', dpi=300)
-plt.show()
-
-
-svm = SVC(kernel='rbf', C=10.0, random_state=0, gamma=0.10)
-svm.fit(X_xor, y_xor)
-y_pred_ksvc = svm.predict(X_xor)
-print('Accuracy: %.2f' % svm.score(X_xor, y_pred_ksvc))
+def predict(X):
+    # 모델 로드
+    print('SVM 모델 로드')
+    with open(r'.\Insta\Model\SVM\model.bin', 'wb') as f:
+        svm = pickle.load(f)
+    y_lists = np.mean(svm.predict_proba(X))
+    return y_lists.index(max(y_lists))

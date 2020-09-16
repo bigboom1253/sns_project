@@ -7,6 +7,8 @@
 # pip install konlpy
 
 import re
+import numpy as np
+import pandas as pd
 # import mecab
 # from konlpy.tag import Komoran
 from pykospacing import spacing
@@ -14,6 +16,7 @@ from soynlp.utils import DoublespaceLineCorpus
 from soynlp.noun import LRNounExtractor_v2
 from soynlp.tokenizer import LTokenizer
 from soynlp.vectorizer import BaseVectorizer
+from soynlp.word import WordExtractor
 
 # 문장 토큰화, Escape Code 있는 상태에서 - \n 기준으로 나눔
 def sent_tokenize(datas):
@@ -61,17 +64,48 @@ def sent_spacing(datas):
         datas = [datas]
     return [spacing(d) for d in datas]
 
+def word_extract(datas):
+    we = WordExtractor(
+    min_frequency=10,
+    min_cohesion_forward=0.05,
+    min_right_branching_entropy=0.0
+    )
+    we.train(datas)
+    return we.extract()
+
 def noun_extract(datas):
     ne = LRNounExtractor_v2(verbose=True)
     return ne.train_extract(datas)
 
-def soy_tokenizer(datas):
-    ns = {noun:score.score for noun, score in noun_extract(datas).items()}
-    return LTokenizer(scores = ns)
+import pickle
+def soy_tokenizer(ext_type = 'noun'):
+    # 파일 불러오기
+    with open(r'.\Insta\Model\Extractor\nouns.bin', 'rb') as f:
+        nouns = pickle.load(f)
+    with open(r'.\Insta\Model\Extractor\words.bin', 'rb') as f:
+        words = pickle.load(f)
 
-def vectorizer(datas, TARGET_ID):
+    noun_scores = {noun:score.score for noun, score in nouns.items()}
+    cohesion_score = {word:score.cohesion_forward for word, score in words.items()}
+    combined_scores = {noun:score + cohesion_score.get(noun, 0)
+        for noun, score in noun_scores.items()}
+    combined_scores.update(
+        {subword:cohesion for subword, cohesion in cohesion_score.items()
+        if not (subword in combined_scores)}
+    )
+    if ext_type == 'noun':
+        return LTokenizer(scores = noun_scores)
+    elif ext_type == 'word':
+        return LTokenizer(scores = cohesion_score)
+    elif ext_type == 'comb':
+        return LTokenizer(scores = combined_scores)
+
+def vectorizer(datas):
+    with open(r'.\Insta\Model\Tokenizer\tokenizer.bin', 'rb') as f:
+        tokenizer = pickle.load(f)
+
     vectorizing = BaseVectorizer(
-        tokenizer = soy_tokenizer(datas),
+        tokenizer = tokenizer,
         min_tf = 0,
         max_tf = 10000,
         min_df = 0,
@@ -80,9 +114,25 @@ def vectorizer(datas, TARGET_ID):
         lowercase=True,
         verbose=True
     )
-    FILE_PATH = './Insta/TARGET_DATA/{}/Result'.format(str(TARGET_ID))
-    vectorizing.fit_to_file(datas, FILE_PATH)
+    vectorizing.fit(datas)
+    with open(r'.\Insta\Model\Vectorizer\vectorizer.bin', 'wb') as f:
+        pickle.dump(vectorizing, f)
 
+def embedding_datas(datas, TARGET_ID, max_length = 128):
+    with open(r'.\Insta\Model\Vectorizer\vectorizer.bin', 'rb') as f:
+        vectorizer = pickle.load(f)
+    temp = pd.DataFrame([vectorizer.encode_a_doc_to_list(d) for d in datas]).fillna(0).astype(int)
+    now_columns = len(temp.columns)
+    if now_columns < max_length:
+        for i in range(now_columns, max_length):
+            temp[i] = 0
+    len(temp)
+    co = temp.columns[:max_length]
+    temp = temp[co]
+    len(temp)
+    with open(r'.\Insta\Target_Data\{}\Result.bin'.format(TARGET_ID), 'wb') as f:
+        pickle.dump(np.matrix(temp), f)
+    
 
 # POS Tagging
 # Mecab 1순위, KOMORAN 2순위 사용 고려
