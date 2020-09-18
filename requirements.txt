@@ -1,0 +1,8 @@
+scrapy
+numpy
+pandas
+soynlp
+sklearn
+keras
+tensorflow
+git+https://github.com/haven-jeon/PyKoSpacing.git

@@ -26,7 +26,7 @@ class resnet():
     def __init__(self, K = 8):
         self.K = K
 
-    input_tensor = Input(shape=(120, 120, 3), dtype='float32', name='input')
+    input_tensor = Input(shape=(8, 8, 2), dtype='float32', name='input')
 
     def set_model(self):
         x = conv1_layer(self.input_tensor)

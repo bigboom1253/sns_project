@@ -4,18 +4,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 
-# 로지스틱 회귀에서의 C와 반대의 개념. 모델을 조율해주는 값이라고 보면 됨.
-def train(X, y, line_type = 'rbf', const=1.0):
-    svm = SVC(kernel=line_type, C=const, random_state=0)
+def train(X, y, line_type = 'rbf', const=1.0, verbose=True):
+    svm = SVC(kernel=line_type, C=const, random_state=0, max_iter=10, cache_size=4000, shrinking=0, verbose=verbose)
     svm.fit(X, y)
     with open(r'.\Insta\Model\SVM\model.bin', 'wb') as f:
         pickle.dump(svm, f)
     print('Accuracy: %.2f' % svm.score(X, y))
 
-def predict(X):
+def predict(X, change_path='.'):
     # 모델 로드
     print('SVM 모델 로드')
-    with open(r'.\Insta\Model\SVM\model.bin', 'wb') as f:
+    with open(r'{}\Model\SVM\model.bin'.format(change_path), 'rb') as f:
         svm = pickle.load(f)
-    y_lists = np.mean(svm.predict_proba(X))
-    return y_lists.index(max(y_lists))
+    return svm.predict(X)

@@ -3,9 +3,9 @@ import pandas as pd
 import pickle
 import numpy as np
 
-# 모델 학습용 나중에 삭제
+# 모델 학습용
 
-# temp = pd.read_csv(r'C:\Users\svsta\Desktop\final_data_900.txt')
+# temp = pd.read_csv(r'C:\Users\svsta\Desktop\saman.txt')
 # datas = list(temp['text'])
 
 # # Word Extractor 학습
@@ -30,22 +30,13 @@ import numpy as np
 # # Vector화
 # WordPre.embedding_datas(datas, 'testing')
 
-# # Y_DATA 추출
-# with open(r'.\Insta\Target_Data\testing\y_datas.bin', 'wb') as f:
-#     pickle.dump(list(temp['target']), f)
+# # 모델 학습
+# x_datas = np.asarray(pd.read_csv(r'.\Insta\Target_Data\testing\Result.txt', index_col=0))
 
-from libsvm.svmutil import *
+# with open (r'Insta\Target_Data\testing\saman.bin', 'rb') as f:
+#     y_datas = pickle.load(f)
 
-# 모델 학습
-x_datas = np.matrix(pd.read_csv(r'.\Insta\Target_Data\testing\Result.txt', index_col=0))
-
-with open (r'Insta\Target_Data\testing\y_datas.bin', 'rb') as f:
-    y_datas = pickle.load(f)
-
-print(x_datas.shape, len(y_datas))
-m = svm_train(y_datas, x_datas, '-c 4')
-with open(r'.\Insta\Model\SVM\model.bin', 'wb') as f:
-    pickle.dump(m, f)
+# print(x_datas.shape, len(y_datas))
 
 # from Model import SVM
 # SVM.train(x_datas, y_datas)

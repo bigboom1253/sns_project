@@ -51,8 +51,8 @@ def del_stopword(token_datas):
 def reg_search(reg, datas):
     if type(datas) != list:
         datas = [datas]
-    result = [list(re.finditer(reg, d)) for d in datas]
-    return [list(map(lambda i : i.group(), r)) for r in result]
+    result = list(filter(lambda i : i if i else None, [list(re.finditer(reg, d)) for d in datas]))
+    return [' '.join(list(map(lambda i : i.group(), r))) for r in result]
 
 def substr(reg, datas, space=True):
     if type(datas) != list:
@@ -62,7 +62,12 @@ def substr(reg, datas, space=True):
 def sent_spacing(datas):
     if type(datas) != list:
         datas = [datas]
+    print(datas)
     return [spacing(d) for d in datas]
+
+import math
+def word_score(score):
+    return (score.cohesion_forward * math.exp(score.right_branching_entropy))
 
 def word_extract(datas):
     we = WordExtractor(
@@ -71,18 +76,30 @@ def word_extract(datas):
     min_right_branching_entropy=0.0
     )
     we.train(datas)
-    return we.extract()
+    words = we.extract()
+    print('단어   (빈도수, cohesion, branching entropy)\n')
+    for word, score in sorted(words.items(), key=lambda x:word_score(x[1]), reverse=True)[:10]:
+        print('%s     (%d, %.3f, %.3f)' % (
+            word, 
+            score.leftside_frequency, 
+            score.cohesion_forward,
+            score.right_branching_entropy
+            )
+         )
+    return 
 
 def noun_extract(datas):
     ne = LRNounExtractor_v2(verbose=True)
-    return ne.train_extract(datas)
+    nouns = ne.train_extract(datas)
+    print(list(ne._compounds_components.items())[:5])
+    return nouns
 
 import pickle
 def soy_tokenizer(ext_type = 'noun'):
     # 파일 불러오기
-    with open(r'.\Insta\Model\Extractor\nouns.bin', 'rb') as f:
+    with open(r'.\Model\Extractor\nouns.bin', 'rb') as f:
         nouns = pickle.load(f)
-    with open(r'.\Insta\Model\Extractor\words.bin', 'rb') as f:
+    with open(r'.\Model\Extractor\words.bin', 'rb') as f:
         words = pickle.load(f)
 
     noun_scores = {noun:score.score for noun, score in nouns.items()}
@@ -103,6 +120,8 @@ def soy_tokenizer(ext_type = 'noun'):
 def vectorizer(datas):
     with open(r'.\Insta\Model\Tokenizer\tokenizer.bin', 'rb') as f:
         tokenizer = pickle.load(f)
+    for d in datas[:10]:
+        print(tokenizer.tokenize(d))
 
     vectorizing = BaseVectorizer(
         tokenizer = tokenizer,
@@ -118,20 +137,17 @@ def vectorizer(datas):
     with open(r'.\Insta\Model\Vectorizer\vectorizer.bin', 'wb') as f:
         pickle.dump(vectorizing, f)
 
-def embedding_datas(datas, TARGET_ID, max_length = 128):
-    with open(r'.\Insta\Model\Vectorizer\vectorizer.bin', 'rb') as f:
+def embedding_datas(datas, TARGET_ID, change_path='.', max_length = 128):
+    with open(r'{}\Model\Vectorizer\vectorizer.bin'.format(change_path), 'rb') as f:
         vectorizer = pickle.load(f)
     temp = pd.DataFrame([vectorizer.encode_a_doc_to_list(d) for d in datas]).fillna(0).astype(int)
     now_columns = len(temp.columns)
     if now_columns < max_length:
         for i in range(now_columns, max_length):
             temp[i] = 0
-    len(temp)
     co = temp.columns[:max_length]
     temp = temp[co]
-    len(temp)
-    with open(r'.\Insta\Target_Data\{}\Result.bin'.format(TARGET_ID), 'wb') as f:
-        pickle.dump(np.matrix(temp), f)
+    temp.to_csv(r'{}\Target_Data\{}\Result.txt'.format(change_path, TARGET_ID))
     
 
 # POS Tagging
