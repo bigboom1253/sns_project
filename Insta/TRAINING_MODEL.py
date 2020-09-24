@@ -5,8 +5,8 @@ import numpy as np
 
 # 모델 학습용
 
-# temp = pd.read_csv(r'C:\Users\svsta\Desktop\saman.txt')
-# datas = list(temp['text'])
+temp = pd.read_csv(r'Insta\Target_Data\testing\test_file.txt')
+datas = list(temp['text'])
 
 # # Word Extractor 학습
 # import pickle
@@ -27,8 +27,8 @@ import numpy as np
 # with open(r'.\Insta\Model\Vectorizer\vectorizer.bin', 'wb') as f:
 #     pickle.dump(WordPre.vectorizer(datas), f)
 
-# # Vector화
-# WordPre.embedding_datas(datas, 'testing')
+# Vector화
+WordPre.embedding_datas(datas, 'testing','Insta')
 
 # # 모델 학습
 # x_datas = np.asarray(pd.read_csv(r'.\Insta\Target_Data\testing\Result.txt', index_col=0))

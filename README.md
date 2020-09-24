@@ -47,7 +47,7 @@ cd sns_project/Insta
 ### 1.2 scrapy 크롤러 동작 명령어
 
 ```
-scrapy crawl insta_tag -a HASTAG='검색할 해시태그'
+scrapy crawl insta_tag -a HASHTAG='검색할 해시태그'
 scrapy crawl insta_post -a INSTA_ID='검색할 인스타 아이디'
 scrapy crawl insta_follow -a INSTA_ID='검색할 인스타 아이디'
 scrapy crawl insta_follower -a INSTA_ID='검색할 인스타 아이디'
